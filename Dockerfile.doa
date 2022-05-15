@@ -1,0 +1,81 @@
+FROM debian:stable-slim
+
+ARG TERM=xterm
+ARG DEBIAN_FRONTEND=noninteractive
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+RUN apt -y update
+RUN apt -y install build-essential git cmake libusb-1.0-0-dev lsof libzmq3-dev clang wget sudo
+RUN update-alternatives --set c++ /usr/bin/clang++
+
+# Hacked rtl-sdr drivers
+WORKDIR /tmp/
+RUN git clone https://github.com/krakenrf/librtlsdr
+RUN mkdir -p /root/librtlsdr/build
+WORKDIR /tmp/librtlsdr/build
+RUN cmake ../ -DINSTALL_UDEV_RULES=ON
+RUN make
+RUN make install
+RUN cp ../rtl-sdr.rules /etc/udev/rules.d/
+RUN ldconfig
+RUN rm -fR /tmp/librtlsdr
+
+# KFR DSP library
+WORKDIR /tmp
+RUN git clone https://github.com/krakenrf/kfr
+RUN mkdir -p krf/build
+WORKDIR /tmp/kfr/build
+RUN cmake -DENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
+RUN make
+RUN mkdir /usr/include/kfr
+RUN cp /tmp/kfr/build/lib/* /usr/local/lib
+RUN cp /tmp/kfr/include/kfr/capi.h /usr/include/kfr
+RUN ldconfig
+RUN rm -fR /tmp/kfr
+
+WORKDIR /tmp
+RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+RUN chmod ug+x /tmp/Miniforge3-Linux-x86_64.sh
+RUN /tmp/Miniforge3-Linux-x86_64.sh -b -p /root/miniconda
+RUN eval "$(/root/miniconda/bin/conda shell.bash hook)"
+ENV PATH="/root/miniconda/bin:${PATH}"
+RUN conda config --set auto_activate_base false
+WORKDIR /root/
+RUN source /root/.bashrc
+RUN conda init bash
+RUN conda create -n kraken python=3.9
+RUN conda run -n kraken conda install scipy
+RUN conda run -n kraken conda install numba
+RUN conda run -n kraken conda install configparser
+RUN conda run -n kraken conda install pyzmq
+RUN conda run -n kraken conda install "blas=*=mkl"
+RUN conda run -n kraken conda install -c numba icc_rt
+RUN rm -fR /tmp/Miniforge3-Linux-x86_64.sh
+
+# HeIMDALL DAQ Firmware
+RUN mkdir /root/krakensdr
+WORKDIR /root/krakensdr
+RUN git clone -b development https://github.com/krakenrf/heimdall_daq_fw
+WORKDIR /root/krakensdr/heimdall_daq_fw/Firmware/_daq_core
+RUN conda run -n kraken make
+
+
+# DoA App
+WORKDIR /root/krakensdr
+RUN apt -y install php-cli nodejs
+RUN conda run -n kraken conda install quart pandas orjson matplotlib requests
+RUN conda run -n kraken pip3 install dash_bootstrap_components quart_compress dash_devices pyargus
+RUN conda run -n kraken conda install dash==1.20.0
+RUN conda run -n kraken conda install werkzeug==2.0.2
+RUN git clone https://github.com/krakenrf/krakensdr_doa
+RUN cp krakensdr_doa/util/kraken_doa_start.sh .
+RUN cp krakensdr_doa/util/kraken_doa_stop.sh .
+
+# Housekeeping
+RUN apt -y remove build-essential git cmake clang
+RUN apt -y autoremove
+RUN apt -y install procps
+RUN apt -y clean
+
+# ENTRYPOINT [ "/root/krakensdr/kraken_doa_start.sh" ]
+CMD /root/krakensdr/kraken_doa_start.sh && sleep infinity
