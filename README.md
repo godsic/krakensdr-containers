@@ -7,6 +7,14 @@ Application Containers for [KrakenSDR](https://krakenrf.com)
 
 Either [podman](https://podman.io/), [Docker](https://www.docker.com/) or [Moby](https://mobyproject.org/) would work. Please refer to your Linux distribution documentation for instructions on how to install either of those projects. The author prefers podman for its daemonless and rootless operation, thus you would see it in examples hereafter. Feel free to replace `podman` with `docker`, if you prefer Docker or Moby projects.
 
+### Blacklisting `dvb_usb_rtl28xu`
+
+`librtlsdr` should be able to directly access KrakenSDR recievers, so we need to blacklist kernel modules that might take over otherwise by
+
+```bash
+sudo echo "blacklist dvb_usb_rtl28xxu` > /etc/modprobe.d/blacklist-dvb_usb_rtl28xxu.conf
+```
+
 ### Removing USB buffer size limitation
 
 Since for most Linux distros `usbcore` module is builtin the kernel, we need to modify its parameters via the kernel arguments as
