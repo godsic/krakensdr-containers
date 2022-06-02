@@ -12,6 +12,7 @@ RUN dnf -y install git \
     cmake \
     libusb1-devel \
     lsof \
+    libxcrypt-compat \
     gcc \
     gcc-c++ \
     cpp \
@@ -29,6 +30,7 @@ RUN dnf -y install git \
     util-linux-core \
     zeromq-devel \
     mold \
+    which \
     ninja-build
 
 # Hacked rtl-sdr drivers
@@ -65,15 +67,12 @@ ENV PATH="/root/miniconda/bin:${PATH}"
 RUN conda config --set auto_activate_base false
 WORKDIR /root/
 RUN source /root/.bashrc
+RUN conda config --add channels intel
 RUN conda init bash
-RUN conda create -n kraken python=3.9
-RUN conda run -n kraken conda install "libblas=*=*mkl"
-RUN conda run -n kraken conda install -c numba icc_rt
-RUN conda run -n kraken conda install numba \
-    scipy \
-    configparser \
-    pyzmq \
-    scikit-rf
+RUN conda create -n kraken intelpython3_core python=3.9
+RUN conda run -n kraken conda install numba
+RUN conda run -n kraken conda install configparser \
+    pyzmq
 RUN rm -fR /tmp/Miniforge3-Linux-x86_64.sh
 
 # HeIMDALL DAQ Firmware
@@ -82,7 +81,6 @@ WORKDIR /root/krakensdr
 RUN git clone -b development https://github.com/krakenrf/heimdall_daq_fw
 WORKDIR /root/krakensdr/heimdall_daq_fw/Firmware/_daq_core
 RUN conda run -n kraken make
-
 
 # DoA App
 WORKDIR /root/krakensdr
@@ -96,6 +94,7 @@ RUN conda run -n kraken conda install quart \
 RUN conda run -n kraken pip3 install dash_bootstrap_components \
     quart_compress \
     dash_devices \
+    scikit-rf \
     pyargus
 RUN conda run -n kraken conda install dash==1.20.0
 RUN conda run -n kraken conda install werkzeug==2.0.2
