@@ -73,3 +73,15 @@ Navigate to `localhost:8080` in your favorit browser.
 ```bash
 podman stop kraken/doa
 ```
+
+## Advanced host settings
+
+###  [`tuned`](https://tuned-project.org/)
+
+A number of Linux distribution provide `tuned` service and `tuned-adm` app that can be used to tune various system settings based on either included or custom profiles. If these are avaliable on your host please invoke:
+
+```bash
+tuned-adm profile hpc-compute intel-sst
+```
+
+that would disable all CPU power saving technologies and tune your system to increase its responsiveness.
