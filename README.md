@@ -85,3 +85,11 @@ sudo tuned-adm profile hpc-compute intel-sst
 ```
 
 that would disable all CPU power saving technologies and tune your system to increase its responsiveness.
+
+### Memory reservation
+
+To avoid possible spikes in processing latency, it might be beneficial to set aside certain amount of host memory for the container via the `--memory-reservation` flag. For example, according to `podman stats`,  DoA app consumes around `600 MB`, so it is reasonable to reserve `1 GB` of host memory for DoA container via
+
+```bash
+podman run -dt --rm --privileged --memory-reservation=1g --shm-size=0 --group-add keep-groups -p 8080:8080/tcp -p 8081:8081/tcp kraken/doa
+```
