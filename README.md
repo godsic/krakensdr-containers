@@ -78,10 +78,10 @@ podman stop kraken/doa
 
 ###  [`tuned`](https://tuned-project.org/)
 
-A number of Linux distribution provide `tuned` service and `tuned-adm` app that can be used to tune various system settings based on either included or custom profiles. If these are avaliable on your host please invoke:
+A number of Linux distributions provide `tuned` service and `tuned-adm` app that can be used to tune various system settings based on either included or custom profiles. If these are avaliable on your host, then please invoke:
 
 ```bash
-tuned-adm profile hpc-compute intel-sst
+sudo tuned-adm profile hpc-compute intel-sst
 ```
 
 that would disable all CPU power saving technologies and tune your system to increase its responsiveness.
