@@ -1,37 +1,21 @@
-FROM centos:stream9
+FROM clearlinux:latest
 
 ARG TERM=xterm
-ARG CENTOS_FRONTEND=noninteractive
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-
-RUN dnf -y update --refresh
-RUN dnf -y install dnf-plugins-core
-RUN dnf -y config-manager --set-enabled crb
-RUN dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-RUN dnf -y install git \
-    cmake \
-    libusb1-devel \
-    lsof \
-    libxcrypt-compat \
-    gcc \
-    gcc-c++ \
-    cpp \
-    clang \
-    flex \
-    bison \
-    binutils \
-    wget \
+RUN echo -e "SlavaUkraini\nSlavaUkraini" | passwd -q
+RUN swupd update
+RUN swupd bundle-add c-basic \
+    devpkg-libusb \
+    libzmq \
+    devpkg-libzmq \
     sudo \
-    libstdc++-devel \
-    libstdc++-static \
-    glibc-devel \
-    glibc-static \
-    procps-ng \
-    util-linux-core \
-    zeromq-devel \
-    mold \
-    which \
-    ninja-build
+    wget \
+    git \
+    c-basic-static \
+    sysadmin-basic \
+    performance-tools \
+    nodejs-basic \
+    php-basic
 
 # Hacked rtl-sdr drivers
 WORKDIR /tmp/
@@ -50,8 +34,8 @@ WORKDIR /tmp
 RUN git clone https://github.com/kfrlib/kfr.git --branch 4.2.1 --single-branch
 RUN mkdir -p krf/build
 WORKDIR /tmp/kfr/build
-RUN cmake -Wno-dev -GNinja -DENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
-RUN ninja
+RUN cmake -Wno-dev -DENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
+RUN make
 RUN mkdir /usr/include/kfr
 RUN cp /tmp/kfr/build/lib/* /usr/lib
 RUN cp /tmp/kfr/include/kfr/capi.h /usr/include/kfr
@@ -66,11 +50,13 @@ RUN eval "$(/root/miniconda/bin/conda shell.bash hook)"
 ENV PATH="/root/miniconda/bin:${PATH}"
 RUN conda config --set auto_activate_base false
 WORKDIR /root/
-RUN source /root/.bashrc
+# RUN source /root/.bashrc
 RUN conda config --add channels intel
+RUN conda update --all
 RUN conda init bash
 RUN conda create -n kraken intelpython3_core python=3.9
 RUN conda run -n kraken conda install numba
+RUN conda run -n kraken conda install -c numba/label/dev numba-scipy
 RUN conda run -n kraken conda install configparser \
     pyzmq
 RUN rm -fR /tmp/Miniforge3-Linux-x86_64.sh
@@ -84,8 +70,6 @@ RUN conda run -n kraken make
 
 # DoA App
 WORKDIR /root/krakensdr
-RUN dnf -y install php-cli \
-    nodejs
 RUN conda run -n kraken conda install quart \
     pandas \
     orjson \
@@ -103,23 +87,10 @@ RUN cp krakensdr_doa/util/kraken_doa_start.sh .
 RUN cp krakensdr_doa/util/kraken_doa_stop.sh .
 
 # Housekeeping
-RUN dnf -y remove gcc \
-    gcc-c++ \
-    clang \
-    cmake \
+RUN conda run conda clean --all --yes
+RUN swupd bundle-remove --force c-basic \
     git \
-    cpp \
-    wget \
-    libstdc++-devel \
-    glibc-devel \
-    glibc-static \
-    libstdc++-static \
-    flex \
-    bison \
-    mold \
-    ninja-build \
-    binutils
-RUN dnf -y clean all
+    wget
 
 # ENTRYPOINT [ "/root/krakensdr/kraken_doa_start.sh" ]
 CMD /root/krakensdr/kraken_doa_start.sh && sleep infinity
