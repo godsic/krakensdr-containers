@@ -50,7 +50,6 @@ RUN eval "$(/root/miniconda/bin/conda shell.bash hook)"
 ENV PATH="/root/miniconda/bin:${PATH}"
 RUN conda config --set auto_activate_base false
 WORKDIR /root/
-# RUN source /root/.bashrc
 RUN conda config --add channels intel
 RUN conda update --all
 RUN conda init bash
@@ -92,5 +91,4 @@ RUN swupd bundle-remove --force c-basic \
     git \
     wget
 
-# ENTRYPOINT [ "/root/krakensdr/kraken_doa_start.sh" ]
 CMD /root/krakensdr/kraken_doa_start.sh && sleep infinity
