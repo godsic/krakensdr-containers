@@ -20,7 +20,7 @@ RUN swupd bundle-add c-basic \
 # Hacked rtl-sdr drivers
 WORKDIR /tmp/
 RUN git clone https://github.com/krakenrf/librtlsdr
-RUN mkdir -p /root/librtlsdr/build
+RUN mkdir -p librtlsdr/build
 WORKDIR /tmp/librtlsdr/build
 RUN cmake ../ -DINSTALL_UDEV_RULES=ON -DCMAKE_INSTALL_PREFIX=/usr
 RUN make
@@ -74,13 +74,13 @@ RUN conda run -n kraken conda install quart \
     orjson \
     matplotlib \
     requests
-RUN conda run -n kraken pip3 install dash_bootstrap_components \
+RUN conda run -n kraken pip3 install dash_bootstrap_components==1.1.0 \
     quart_compress \
     dash_devices \
     scikit-rf \
     pyargus
-RUN conda run -n kraken conda install dash==1.20.0
-RUN conda run -n kraken conda install werkzeug==2.0.2
+RUN conda run -n kraken conda install dash==1.20.0 \
+    werkzeug==2.0.3
 RUN git clone https://github.com/krakenrf/krakensdr_doa
 RUN cp krakensdr_doa/util/kraken_doa_start.sh .
 RUN cp krakensdr_doa/util/kraken_doa_stop.sh .
