@@ -34,6 +34,7 @@ sudo echo "YOURUSERNAME -   rtprio  99" > /etc/security/limits.d/98-YOURUSERNAME
 ```bash
 sudo echo "kernel.sched_rt_runtime_us=-1" >> /etc/sysctl.d/99-sysctl.conf
 ```
+
 ### Remote operation
 
 If you are planning on using apps remotely, you might need to open ports `8080` and `8081` in the Linux distro firewall on the host machine. Please refer to your distro documentation for specific instructions. For those using [firewalld](https://firewalld.org/), e.g, Fedora, CentOS Stream, etc., the ports can be opened with the following commands:
@@ -59,7 +60,6 @@ podman build --tag kraken/doa -f ./Dockerfile.doa
 
 ### Running container
 
-
 ```bash
 podman run -dt --rm --privileged --shm-size=0 --group-add keep-groups -p 8080:8080/tcp -p 8081:8081/tcp kraken/doa
 ```
@@ -76,7 +76,7 @@ podman stop kraken/doa
 
 ## Advanced host settings
 
-###  [`tuned`](https://tuned-project.org/)
+### [`tuned`](https://tuned-project.org/)
 
 A number of Linux distributions provide `tuned` service and `tuned-adm` app that can be used to tune various system settings based on either included or custom profiles. If these are avaliable on your host, then please invoke:
 
@@ -93,4 +93,35 @@ To avoid possible spikes in processing latency, it might be beneficial to set as
 
 ```bash
 podman run -dt --rm --privileged --memory-reservation=1g --shm-size=0 --group-add keep-groups -p 8080:8080/tcp -p 8081:8081/tcp kraken/doa
+```
+
+### Restrict execution to particular CPUs
+
+It might be beneficial to restrict Kraken application containers execution to specific CPU cores, e.g., to physical cores in SMT systems, or to prevent non-unifom memory access in multi-CPU configurations. This can be done with so-called `cpuset` cgroup controller, but it might not be allowed for regular users. One can check it with
+
+```bash
+cat /sys/fs/cgroup/user.slice/user-*.slice/user@*.service/cgroup.subtree_control
+```
+
+If output contains `cpuset` among other things, then it is allowed. If not, then additional, distribution-specific configuration should be done. For instance, on stock `Fedora 36`, one needs to modify `/usr/lib/systemd/system/user@.service.d/00-uresourced.conf`
+to make sure its content looks like:
+
+```conf
+[Unit]
+After=uresourced.service
+
+[Service]
+Delegate=cpuset cpu io memory
+```
+
+and then restart the system and, in some cases, run
+
+```bash
+podman system reset
+```
+
+Once all is set, one can use podman's `--cpuset-cpus` flag to restict execution to specific CPUs, e.g.,
+
+```bash
+podman run -dt --rm --privileged --memory-reservation=1g --cpuset-cpus=0,1 --shm-size=0 --group-add keep-groups -p 8080:8080/tcp -p 8081:8081/tcp kraken/doa
 ```
