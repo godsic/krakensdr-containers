@@ -66,7 +66,30 @@ podman run -dt --rm --privileged --shm-size=0 --group-add keep-groups -p 8080:80
 
 ### Accessing web interface
 
-Navigate to `localhost:8080` in your favorit browser.
+Navigate to `localhost:8080` in your favorite browser.
+
+### Saving settings
+
+Adjust Kraken's settings to your needs and then press `"Save Configuration"` button. After that open terminal and execute:
+
+```bash
+podman ps --format="{{.ID}}" --filter="ancestor=localhost/kraken/doa"
+```
+
+This should output `Container ID` of the Kraken DoA app, e.g., `107a71d4134f`.
+Now commit (save) changes made in the container to the underlying image via, e.g.,:
+
+```bash
+podman commit -p 107a71d4134f localhost/kraken/doa
+```
+
+This command will pause the container execution, commit changes and then resume its execution.
+
+The oneliner to save container's changes is
+
+```bash
+podman commit -p $(podman ps --format="{{.ID}}" --filter="ancestor=localhost/kraken/doa") localhost/kraken/doa
+```
 
 ### Sopping container
 
