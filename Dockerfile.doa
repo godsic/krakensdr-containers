@@ -31,10 +31,10 @@ RUN rm -fR /tmp/librtlsdr
 
 # KFR DSP library
 WORKDIR /tmp
-RUN git clone https://github.com/kfrlib/kfr.git --branch 4.2.1 --single-branch
+RUN git clone https://github.com/kfrlib/kfr.git --branch 5.0.2 --single-branch
 RUN mkdir -p krf/build
 WORKDIR /tmp/kfr/build
-RUN cmake -Wno-dev -DENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
+RUN cmake -Wno-dev -DKFR_ENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
 RUN make
 RUN mkdir /usr/include/kfr
 RUN cp /tmp/kfr/build/lib/* /usr/lib
@@ -53,7 +53,7 @@ WORKDIR /root/
 RUN conda config --add channels intel
 RUN conda update --all
 RUN conda init bash
-RUN conda create -n kraken intelpython3_core python=3.9
+RUN conda create -n kraken intelpython3_core python=3.10
 RUN conda run -n kraken conda install numba
 RUN conda run -n kraken conda install -c numba/label/dev numba-scipy
 RUN conda run -n kraken conda install configparser \
@@ -70,14 +70,12 @@ RUN conda run -n kraken make
 # DoA App
 WORKDIR /root/krakensdr
 RUN conda run -n kraken conda install quart \
-    pandas \
-    orjson \
-    matplotlib \
     requests
 RUN conda run -n kraken pip3 install dash_bootstrap_components==1.1.0 \
     quart_compress \
     dash_devices \
     scikit-rf \
+    matplotlib \
     pyargus
 RUN conda run -n kraken conda install dash==1.20.0 \
     werkzeug==2.0.3
