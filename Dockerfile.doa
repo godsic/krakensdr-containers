@@ -54,10 +54,14 @@ RUN conda config --add channels intel
 RUN conda update --all
 RUN conda init bash
 RUN conda create -n kraken intelpython3_core python=3.10
+RUN conda run -n kraken conda install \
+    numpy==1.22.3 \
+    numpy-base==1.22.3
 RUN conda run -n kraken conda install numba
-RUN conda run -n kraken conda install -c numba/label/dev numba-scipy
-RUN conda run -n kraken conda install configparser \
-    pyzmq
+RUN conda run -n kraken conda install \
+    pyzmq \
+    pandas\
+    tbb4py
 RUN rm -fR /tmp/Miniforge3-Linux-x86_64.sh
 
 # HeIMDALL DAQ Firmware
@@ -70,15 +74,21 @@ RUN conda run -n kraken make
 # DoA App
 WORKDIR /root/krakensdr
 RUN conda run -n kraken conda install quart \
+    werkzeug==2.0.3 \
     requests
-RUN conda run -n kraken pip3 install dash_bootstrap_components==1.1.0 \
+RUN conda config --remove channels intel
+RUN conda run -n kraken pip3 install \
     quart_compress \
     dash_devices \
     scikit-rf \
     matplotlib \
     pyargus
-RUN conda run -n kraken conda install dash==1.20.0 \
-    werkzeug==2.0.3
+RUN conda run -n kraken conda install \
+    dash-bootstrap-components \
+    dash-core-components==1.16.0 \
+    dash-html-components==1.1.4 \
+    dash-renderer \
+    future
 RUN git clone https://github.com/krakenrf/krakensdr_doa
 RUN cp krakensdr_doa/util/kraken_doa_start.sh .
 RUN cp krakensdr_doa/util/kraken_doa_stop.sh .
