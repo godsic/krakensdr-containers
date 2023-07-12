@@ -1,21 +1,41 @@
-FROM clearlinux:latest
+FROM centos:stream9
 
 ARG TERM=xterm
+ARG CENTOS_FRONTEND=noninteractive
+
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-RUN echo -e "SlavaUkraini\nSlavaUkraini" | passwd -q
-RUN swupd update
-RUN swupd bundle-add c-basic \
-    devpkg-libusb \
-    libzmq \
-    devpkg-libzmq \
+RUN dnf -y update --refresh
+RUN dnf -y install dnf-plugins-core
+RUN dnf -y config-manager --set-enabled crb
+RUN dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+RUN dnf -y install git \
+    cmake \
+    libusb1-devel \
+    lsof \
+    gcc \
+    gcc-c++ \
+    cpp \
+    clang \
+    flex \
+    bison \
+    binutils \
     sudo \
-    wget \
-    git \
-    c-basic-static \
-    sysadmin-basic \
-    performance-tools \
-    nodejs-basic \
-    php-basic
+    libstdc++-devel \
+    libstdc++-static \
+    glibc-devel \
+    glibc-static \
+    procps-ng \
+    util-linux-core \
+    zeromq-devel \
+    mold \
+    ninja-build \
+    nodejs \
+    php-cli \
+    usbutils
+
+# miniserve instead of PHP
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN /root/.cargo/bin/cargo install miniserve
 
 # Hacked rtl-sdr drivers
 WORKDIR /tmp/
@@ -31,11 +51,11 @@ RUN rm -fR /tmp/librtlsdr
 
 # KFR DSP library
 WORKDIR /tmp
-RUN git clone https://github.com/kfrlib/kfr.git --branch 5.0.2 --single-branch
+RUN git clone https://github.com/kfrlib/kfr.git --branch 5.0.3 --single-branch
 RUN mkdir -p krf/build
 WORKDIR /tmp/kfr/build
-RUN cmake -Wno-dev -DKFR_ENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
-RUN make
+RUN cmake -Wno-dev -GNinja -DKFR_ENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
+RUN ninja
 RUN mkdir /usr/include/kfr
 RUN cp /tmp/kfr/build/lib/* /usr/lib
 RUN cp /tmp/kfr/include/kfr/capi.h /usr/include/kfr
@@ -43,31 +63,31 @@ RUN ldconfig
 RUN rm -fR /tmp/kfr
 
 WORKDIR /tmp
-RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+RUN curl --proto '=https' --tlsv1.2 -sSfLO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
 RUN chmod ug+x /tmp/Miniforge3-Linux-x86_64.sh
 RUN /tmp/Miniforge3-Linux-x86_64.sh -b -p /root/miniconda
 RUN eval "$(/root/miniconda/bin/conda shell.bash hook)"
 ENV PATH="/root/miniconda/bin:${PATH}"
 RUN conda config --set auto_activate_base false
 WORKDIR /root/
-RUN conda config --add channels intel
 RUN conda update --all
 RUN conda init bash
-RUN conda create -n kraken intelpython3_core python=3.10
-RUN conda run -n kraken conda install \
-    numpy==1.22.3 \
-    numpy-base==1.22.3
-RUN conda run -n kraken conda install numba
-RUN conda run -n kraken conda install \
+RUN conda create -n kraken python=3.11
+RUN conda run -n kraken conda install intel-cmplr-lib-rt
+RUN conda run -n kraken conda install numba \
     pyzmq \
-    pandas\
-    tbb4py
+    pandas \
+    tbb4py \
+    numpy \
+    orjson \
+    scipy==1.9.3
+RUN conda run -n kraken conda install "libblas=*=*mkl"
 RUN rm -fR /tmp/Miniforge3-Linux-x86_64.sh
 
 # HeIMDALL DAQ Firmware
 RUN mkdir /root/krakensdr
 WORKDIR /root/krakensdr
-RUN git clone -b development https://github.com/krakenrf/heimdall_daq_fw
+RUN git clone https://github.com/krakenrf/heimdall_daq_fw
 WORKDIR /root/krakensdr/heimdall_daq_fw/Firmware/_daq_core
 RUN conda run -n kraken make
 
@@ -76,13 +96,13 @@ WORKDIR /root/krakensdr
 RUN conda run -n kraken conda install quart \
     werkzeug==2.0.3 \
     requests
-RUN conda config --remove channels intel
 RUN conda run -n kraken pip3 install \
     quart_compress \
     dash_devices \
     scikit-rf \
     matplotlib \
-    pyargus
+    pyargus \
+    gpsd-py3
 RUN conda run -n kraken conda install \
     dash-bootstrap-components \
     dash-core-components==1.16.0 \
@@ -95,8 +115,24 @@ RUN cp krakensdr_doa/util/kraken_doa_stop.sh .
 
 # Housekeeping
 RUN conda run conda clean --all --yes
-RUN swupd bundle-remove --force c-basic \
+RUN conda run -n kraken pip3 cache purge
+RUN dnf -y remove gcc \
+    gcc-c++ \
+    clang \
+    cmake \
+    dnf-plugins-core \
     git \
-    wget
+    cpp \
+    libstdc++-devel \
+    glibc-devel \
+    glibc-static \
+    libstdc++-static \
+    flex \
+    bison \
+    mold \
+    ninja-build \
+    binutils
+RUN dnf -y clean all
+RUN rm -fR /root/.cargo/registry /root/.rustup/
 
 CMD /root/krakensdr/kraken_doa_start.sh && sleep infinity
