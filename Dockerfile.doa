@@ -31,7 +31,8 @@ RUN dnf -y install git \
     ninja-build \
     nodejs \
     php-cli \
-    usbutils
+    usbutils \
+    jq
 
 # miniserve instead of PHP
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
