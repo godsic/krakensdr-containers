@@ -1,4 +1,4 @@
-FROM centos:stream9
+FROM quay.io/centos/centos:stream9
 
 ARG TERM=xterm
 ARG CENTOS_FRONTEND=noninteractive
