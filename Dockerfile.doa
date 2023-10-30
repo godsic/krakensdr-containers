@@ -52,7 +52,7 @@ RUN rm -fR /tmp/librtlsdr
 
 # KFR DSP library
 WORKDIR /tmp
-RUN git clone https://github.com/kfrlib/kfr.git --branch 5.0.3 --single-branch
+RUN git clone https://github.com/kfrlib/kfr.git --branch 5.1.0 --single-branch
 RUN mkdir -p krf/build
 WORKDIR /tmp/kfr/build
 RUN cmake -Wno-dev -GNinja -DKFR_ENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
