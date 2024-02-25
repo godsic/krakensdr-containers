@@ -52,10 +52,10 @@ RUN rm -fR /tmp/librtlsdr
 
 # KFR DSP library
 WORKDIR /tmp
-RUN git clone https://github.com/kfrlib/kfr.git --branch 5.1.0 --single-branch
+RUN git clone https://github.com/kfrlib/kfr.git --branch 6.0.2 --single-branch
 RUN mkdir -p krf/build
 WORKDIR /tmp/kfr/build
-RUN cmake -Wno-dev -GNinja -DKFR_ENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release ..
+RUN cmake -Wno-dev -GNinja -DKFR_ENABLE_CAPI_BUILD=ON -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
 RUN ninja
 RUN mkdir /usr/include/kfr
 RUN cp /tmp/kfr/build/lib/* /usr/lib
@@ -103,6 +103,7 @@ RUN conda run -n kraken pip3 install \
     scikit-rf \
     matplotlib \
     pyargus \
+    gitpython \
     gpsd-py3
 RUN conda run -n kraken conda install \
     dash-bootstrap-components \
@@ -122,7 +123,6 @@ RUN dnf -y remove gcc \
     clang \
     cmake \
     dnf-plugins-core \
-    git \
     cpp \
     libstdc++-devel \
     glibc-devel \
